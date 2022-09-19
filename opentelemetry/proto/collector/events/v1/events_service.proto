@@ -1,0 +1,127 @@
+// Copyright 2022, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package opentelemetry.proto.collector.events.v1;
+
+option java_multiple_files = true;
+option java_package = "io.opentelemetry.proto.collector.events.v1";
+option java_outer_classname = "EventsServiceProto";
+option go_package = "go.opentelemetry.io/proto/otlp/collector/events/v1";
+
+service EventsService {
+  // The EventStream endpoint is a bi-directional stream used to send batch of events (`BatchEvent`) from the exporter
+  // to the collector. The collector returns `BatchStatus` messages to acknowledge the `BatchEvent` messages received.
+  rpc EventStream(stream BatchEvent) returns (stream BatchStatus) {}
+
+  // Futures evolutions, e.g.: command_stream(stream ExporterMessage) return (stream CollectorMessage) {}
+}
+
+// A message sent by an exporter to a collector containing a batch of events in the Apache Arrow columnar encoding.
+message BatchEvent {
+  // [mandatory] Batch ID. Must be unique in the context of the stream.
+  string batch_id = 1;
+
+  // [mandatory] A unique id assigned to a sub-stream of the batch sharing the same schema, and dictionaries.
+  string sub_stream_id = 2;
+
+  // [mandatory] A collection of payloads containing the data of the batch.
+  repeated OtlpArrowPayload otlp_arrow_payloads = 3;
+
+  // [optional] Delivery type (BEST_EFFORT by default).
+  DeliveryType delivery_type = 4;
+}
+
+// Enumeration of all the OTLP Arrow payload types currently supported by the OTLP Arrow protocol.
+enum OtlpArrowPayloadType {
+  // A payload representing a collection of metrics.
+  METRICS = 0;
+  // A payload representing a collection of logs.
+  LOGS = 1;
+  // A payload representing a collection of traces.
+  SPANS = 2;
+}
+
+// Represents a batch of OTLP Arrow entities.
+message OtlpArrowPayload {
+  // [mandatory] Type of the OTLP Arrow payload.
+  OtlpArrowPayloadType type = 1;
+
+  // [mandatory for the first message] Serialized Arrow Schema in IPC stream format representing the batch of events
+  // stored in record_batch. The definition of this schema follows a set of naming conventions and defines a set of
+  // mandatory and optional fields.
+  //
+  // For a description of the Arrow IPC format see: https://arrow.apache.org/docs/format/Columnar.html#serialization-and-interprocess-communication-ipc
+  bytes schema = 2;
+
+  // [optional] Serialized Arrow dictionaries
+  repeated EncodedData dictionaries = 3;
+
+  // [mandatory] Serialized Arrow Record Batch
+  EncodedData record_batch = 4;
+
+  // [mandatory]
+  CompressionMethod compression = 5;
+}
+
+// The delivery mode used to process the message.
+// The collector must comply with this parameter.
+enum DeliveryType {
+  BEST_EFFORT = 0;
+  // Future extension -> AT_LEAST_ONCE = 1;
+}
+
+// The compression method used to compress the different bytes buffer.
+enum CompressionMethod {
+  NO_COMPRESSION = 0;
+  ZSTD = 1;
+}
+
+// Arrow IPC message
+// see: https://arrow.apache.org/docs/format/Columnar.html#serialization-and-interprocess-communication-ipc
+message EncodedData {
+  // Serialized Arrow encoded IPC message
+  bytes ipc_message = 1;
+
+  // Serialized Arrow buffer
+  bytes arrow_data = 2;
+}
+
+// A message sent by a Collector to the exporter that opened the Jodata stream.
+message BatchStatus {
+  repeated StatusMessage statuses = 1;
+}
+
+message StatusMessage {
+  string batch_id = 1;
+  StatusCode status_code = 2;
+  ErrorCode error_code = 3;
+  string error_message = 4;
+  RetryInfo retry_info = 5;
+}
+
+enum StatusCode {
+  OK = 0;
+  ERROR = 1;
+}
+
+enum ErrorCode {
+  UNAVAILABLE = 0;
+  INVALID_ARGUMENT = 1;
+}
+
+message RetryInfo {
+  int64 retry_delay = 1;
+}
