@@ -18,19 +18,17 @@ package opentelemetry.proto.collector.events.v1;
 
 option java_multiple_files = true;
 option java_package = "io.opentelemetry.proto.collector.events.v1";
-option java_outer_classname = "EventsServiceProto";
+option java_outer_classname = "ArrowServiceProto";
 option go_package = "go.opentelemetry.io/proto/otlp/collector/events/v1";
 
-service EventsService {
-  // The EventStream endpoint is a bi-directional stream used to send batch of events (`BatchEvent`) from the exporter
-  // to the collector. The collector returns `BatchStatus` messages to acknowledge the `BatchEvent` messages received.
-  rpc EventStream(stream BatchEvent) returns (stream BatchStatus) {}
-
-  // Futures evolutions, e.g.: command_stream(stream ExporterMessage) return (stream CollectorMessage) {}
+service ArrowService {
+  // The ArrowStream endpoint is a bi-directional stream used to send batch of events (`ArrowStreamRequest`) from the exporter
+  // to the collector. The collector returns `ArrowStreamResponse` messages to acknowledge the `ArrowStreamRequest` messages received.
+  rpc ArrowStream(stream ArrowStreamRequest) returns (stream ArrowStreamResponse) {}
 }
 
 // A message sent by an exporter to a collector containing a batch of events in the Apache Arrow columnar encoding.
-message BatchEvent {
+message ArrowStreamRequest {
   // [mandatory] Batch ID. Must be unique in the context of the stream.
   string batch_id = 1;
 
@@ -38,14 +36,11 @@ message BatchEvent {
   string sub_stream_id = 2;
 
   // [mandatory] A collection of payloads containing the data of the batch.
-  repeated OtlpArrowPayload otlp_arrow_payloads = 3;
-
-  // [optional] Delivery type (BEST_EFFORT by default).
-  DeliveryType delivery_type = 4;
+  repeated ArrowPayload arrow_payloads = 3;
 }
 
-// Enumeration of all the OTLP Arrow payload types currently supported by the OTLP Arrow protocol.
-enum OtlpArrowPayloadType {
+// Enumeration of all the Arrow payload types currently supported by the OTLP Arrow protocol.
+enum ArrowPayloadType {
   // A payload representing a collection of metrics.
   METRICS = 0;
   // A payload representing a collection of logs.
@@ -55,9 +50,9 @@ enum OtlpArrowPayloadType {
 }
 
 // Represents a batch of OTLP Arrow entities.
-message OtlpArrowPayload {
-  // [mandatory] Type of the OTLP Arrow payload.
-  OtlpArrowPayloadType type = 1;
+message ArrowPayload {
+  // [mandatory] Type of the Arrow payload.
+  ArrowPayloadType type = 1;
 
   // [mandatory for the first message] Serialized Arrow Schema in IPC stream format representing the batch of events
   // stored in record_batch. The definition of this schema follows a set of naming conventions and defines a set of
@@ -74,13 +69,6 @@ message OtlpArrowPayload {
 
   // [mandatory]
   CompressionMethod compression = 5;
-}
-
-// The delivery mode used to process the message.
-// The collector must comply with this parameter.
-enum DeliveryType {
-  BEST_EFFORT = 0;
-  // Future extension -> AT_LEAST_ONCE = 1;
 }
 
 // The compression method used to compress the different bytes buffer.
@@ -100,7 +88,7 @@ message EncodedData {
 }
 
 // A message sent by a Collector to the exporter that opened the Jodata stream.
-message BatchStatus {
+message ArrowStreamResponse {
   repeated StatusMessage statuses = 1;
 }
 
