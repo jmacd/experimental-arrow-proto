@@ -14,12 +14,12 @@
 
 syntax = "proto3";
 
-package opentelemetry.proto.collector.events.v1;
+package opentelemetry.proto.collector.arrow.v1;
 
 option java_multiple_files = true;
-option java_package = "io.opentelemetry.proto.collector.events.v1";
+option java_package = "io.opentelemetry.proto.collector.arrow.v1";
 option java_outer_classname = "ArrowServiceProto";
-option go_package = "go.opentelemetry.io/proto/otlp/collector/events/v1";
+option go_package = "go.opentelemetry.io/proto/otlp/collector/arrow/v1";
 
 service ArrowService {
   // The ArrowStream endpoint is a bi-directional stream used to send batch of events (`ArrowStreamRequest`) from the exporter
